@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0A2E29"/>
+  <!-- patas traseras -->
+  <ellipse cx="16" cy="46" rx="6" ry="4.5" fill="#5C4033" transform="rotate(-25 16 46)"/>
+  <ellipse cx="48" cy="46" rx="6" ry="4.5" fill="#5C4033" transform="rotate(25 48 46)"/>
+  <!-- aletas delanteras -->
+  <ellipse cx="12" cy="26" rx="7" ry="5" fill="#6B4E3D" transform="rotate(-35 12 26)"/>
+  <ellipse cx="52" cy="26" rx="7" ry="5" fill="#6B4E3D" transform="rotate(35 52 26)"/>
+  <!-- caparazon -->
+  <ellipse cx="32" cy="34" rx="19" ry="16" fill="#5EEAD4"/>
+  <ellipse cx="32" cy="34" rx="19" ry="16" fill="none" stroke="#0A2E29" stroke-width="1.4" opacity="0.35"/>
+  <!-- costuras del caparazon -->
+  <g stroke="#0A2E29" stroke-width="1.3" opacity="0.45" fill="none">
+    <path d="M32 20 L32 48"/>
+    <path d="M20 26 L44 26"/>
+    <path d="M20 42 L44 42"/>
+    <path d="M15 34 Q32 30 49 34"/>
+    <path d="M15 34 Q32 38 49 34"/>
+  </g>
+  <!-- cabeza -->
+  <circle cx="32" cy="16" r="8.5" fill="#6B4E3D"/>
+  <!-- ojos -->
+  <circle cx="28.5" cy="14.5" r="1.6" fill="#0A2E29"/>
+  <circle cx="35.5" cy="14.5" r="1.6" fill="#0A2E29"/>
+</svg>
