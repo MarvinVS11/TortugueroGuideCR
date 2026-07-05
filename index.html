@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tortuguero · Viaje 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canal-ink:#0A2E29;
+    --palm-deep:#123B34;
+    --shell-brown:#5C4033;
+    --sand:#E9DFC7;
+    --glow:#5EEAD4;
+    --glow-dim:#3FA79A;
+    --moonlight:#DCEDE8;
+    --coral:#E97C5C;
+    --line:rgba(220,237,232,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canal-ink);
+    color:var(--moonlight);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--glow);color:var(--canal-ink);}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:64px 0 40px;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .hero::before{
+    content:"";
+    position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse 900px 300px at 15% -10%, rgba(94,234,212,0.10), transparent),
+      radial-gradient(ellipse 700px 300px at 90% 10%, rgba(233,124,92,0.06), transparent);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--glow);
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--glow);}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:clamp(36px,6vw,58px);
+    line-height:1.02;
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  h1 em{font-style:italic;color:var(--glow);font-weight:500;}
+  .hero-sub{
+    color:rgba(220,237,232,0.65);
+    font-size:16px;
+    max-width:520px;
+    line-height:1.55;
+    margin:0 0 40px;
+  }
+  .hero-sub b{color:var(--moonlight);font-weight:600;}
+
+  /* river path */
+  .river{width:100%;height:auto;display:block;overflow:visible;}
+  .river-line{
+    fill:none;stroke:var(--glow-dim);stroke-width:1.6;
+    stroke-dasharray:4 6;
+  }
+  .node-dot{fill:var(--canal-ink);stroke:var(--glow);stroke-width:1.6;}
+  .node-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    fill:rgba(220,237,232,0.55);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  .node-title{
+    font-family:'Fraunces',serif;
+    font-size:15px;
+    fill:var(--moonlight);
+    font-weight:500;
+  }
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:44px 0;}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .section-head h2{
+    font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0;
+  }
+  .section-head .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(220,237,232,0.5);
+    letter-spacing:0.06em;text-transform:uppercase;
+  }
+
+  /* ---------- FORM ---------- */
+  .panel{
+    background:var(--palm-deep);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:24px;
+  }
+  .form-grid{
+    display:grid;
+    grid-template-columns:1.6fr 1fr 0.8fr 1fr 0.9fr auto;
+    gap:12px;
+    align-items:end;
+  }
+  @media (max-width:860px){ .form-grid{grid-template-columns:1fr 1fr;} }
+  label{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    letter-spacing:0.06em;text-transform:uppercase;color:rgba(220,237,232,0.55);
+    margin-bottom:6px;
+  }
+  input,select{
+    width:100%;
+    background:rgba(10,46,41,0.6);
+    border:1px solid var(--line);
+    color:var(--moonlight);
+    padding:10px 12px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  input:focus,select:focus{outline:2px solid var(--glow);outline-offset:1px;border-color:transparent;}
+  select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--glow) 50%),linear-gradient(135deg,var(--glow) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;}
+  button{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+    background:var(--glow);color:var(--canal-ink);
+    border:none;border-radius:8px;
+    padding:11px 18px;cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+    white-space:nowrap;
+  }
+  button:hover{background:#7CF2DD;}
+  button:active{transform:scale(0.97);}
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--moonlight);
+  }
+  button.ghost:hover{border-color:var(--glow);color:var(--glow);}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-del{
+    background:transparent;color:rgba(220,237,232,0.4);border:none;font-size:13px;padding:4px 8px;
+  }
+  .btn-del:hover{color:var(--coral);background:transparent;}
+
+  /* ---------- CATEGORY SUMMARY ---------- */
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:20px;}
+  .cat-card{
+    border:1px solid var(--line);border-radius:12px;padding:16px;
+    background:rgba(220,237,232,0.03);
+  }
+  .cat-card .icon{font-size:20px;margin-bottom:8px;display:block;}
+  .cat-card .name{font-size:12.5px;color:rgba(220,237,232,0.6);margin-bottom:6px;}
+  .cat-card .amt{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--moonlight);}
+
+  /* ---------- LIST ---------- */
+  .gasto-row{
+    display:grid;
+    grid-template-columns:auto 1fr auto auto auto auto;
+    gap:14px;align-items:center;
+    padding:14px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .gasto-row:last-child{border-bottom:none;}
+  .cat-pill{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;
+    text-transform:uppercase;color:var(--glow);
+    border:1px solid var(--glow-dim);border-radius:20px;
+    padding:4px 10px;white-space:nowrap;
+  }
+  .g-desc{font-size:14.5px;}
+  .g-desc small{display:block;color:rgba(220,237,232,0.45);font-size:12px;margin-top:2px;}
+  .g-person{font-size:13px;color:rgba(220,237,232,0.7);white-space:nowrap;}
+  .g-monto{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;white-space:nowrap;}
+  .empty-state{
+    text-align:center;padding:50px 20px;color:rgba(220,237,232,0.45);
+    font-size:14px;
+  }
+
+  /* ---------- BALANCE ---------- */
+  .balance-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media (max-width:700px){ .balance-grid{grid-template-columns:1fr 1fr;} }
+  .person-card{
+    border:1px solid var(--line);border-radius:12px;padding:18px;
+    background:rgba(220,237,232,0.03);
+    text-align:center;
+  }
+  .person-card .who{font-family:'Fraunces',serif;font-size:17px;margin-bottom:10px;}
+  .person-card .paid{font-size:12px;color:rgba(220,237,232,0.5);margin-bottom:4px;}
+  .person-card .paid b{color:var(--moonlight);font-family:'IBM Plex Mono',monospace;}
+  .balance-tag{
+    display:inline-block;margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+    padding:5px 12px;border-radius:20px;
+  }
+  .balance-tag.positive{background:rgba(94,234,212,0.14);color:var(--glow);}
+  .balance-tag.negative{background:rgba(233,124,92,0.14);color:var(--coral);}
+  .balance-tag.zero{background:rgba(220,237,232,0.08);color:rgba(220,237,232,0.6);}
+
+  .settle-list{margin-top:22px;display:flex;flex-direction:column;gap:10px;}
+  .settle-row{
+    display:flex;align-items:center;gap:10px;font-size:14px;
+    padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+    background:rgba(220,237,232,0.03);
+  }
+  .settle-row .arrow{color:var(--glow);font-family:'IBM Plex Mono',monospace;}
+  .settle-row b{color:var(--moonlight);}
+  .settle-row .amt{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--glow);}
+
+  .total-strip{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:20px 24px;border-radius:14px;
+    background:linear-gradient(120deg, var(--palm-deep), rgba(94,234,212,0.06));
+    border:1px solid var(--line);
+    margin-bottom:24px;
+  }
+  .total-strip .label{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(220,237,232,0.6);}
+  .total-strip .value{font-family:'Fraunces',serif;font-size:32px;font-weight:500;color:var(--moonlight);}
+  .total-strip .value span{color:var(--glow);}
+
+  footer{
+    padding:30px 0 50px;text-align:center;
+    color:rgba(220,237,232,0.35);font-size:12.5px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+
+  .status-banner{
+    background:rgba(233,124,92,0.12);border:1px solid rgba(233,124,92,0.3);
+    color:var(--coral);padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:20px;
+    display:none;
+  }
+  .status-banner.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Kathy · Adriana · Fernanda · Marvin</div>
+    <h1>Tortuguero se llega<br><em>solo por canal.</em></h1>
+    <p class="hero-sub">No hay carretera hasta el pueblo — todo el viaje, desde el tour hasta el avistamiento de tortugas, sigue una misma ruta de agua. <b>Registra cada gasto</b> abajo y el sitio reparte la cuenta entre los 4, en partes iguales.</p>
+
+    <svg class="river" viewBox="0 0 920 130" preserveAspectRatio="none">
+      <path class="river-line" d="M10,90 C 140,20 240,140 380,70 S 620,10 780,80 900,40 910,55"/>
+      <g id="riverNodes"></g>
+    </svg>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div id="statusBanner" class="status-banner"></div>
+
+    <div class="section-head">
+      <h2>Registrar gasto</h2>
+      <span class="tag">Se divide 25% · 25% · 25% · 25%</span>
+    </div>
+    <div class="panel">
+      <div class="form-grid">
+        <div>
+          <label for="f-desc">Descripción</label>
+          <input id="f-desc" type="text" placeholder="Ej. Lancha ida Cariari–Tortuguero">
+        </div>
+        <div>
+          <label for="f-cat">Categoría</label>
+          <select id="f-cat">
+            <option value="Tour a Tortuguero">Tour a Tortuguero</option>
+            <option value="Estadía">Estadía</option>
+            <option value="Tour de canoas / avistamiento">Tour de canoas / avistamiento</option>
+            <option value="Alimentación">Alimentación</option>
+            <option value="Transporte">Transporte</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-monto">Monto ₡</label>
+          <input id="f-monto" type="number" min="0" step="1" placeholder="0">
+        </div>
+        <div>
+          <label for="f-quien">Pagó</label>
+          <select id="f-quien">
+            <option>Kathy</option>
+            <option>Adriana</option>
+            <option>Fernanda</option>
+            <option>Marvin</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-fecha">Fecha</label>
+          <input id="f-fecha" type="date">
+        </div>
+        <button id="btnAdd">Agregar</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Resumen por categoría</h2>
+      <span class="tag" id="totalGastosTag">0 gastos</span>
+    </div>
+    <div class="total-strip">
+      <span class="label">Total del viaje</span>
+      <span class="value">₡<span id="totalGeneral">0</span></span>
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Gastos registrados</h2>
+    </div>
+    <div class="panel" style="padding:6px 20px;">
+      <div id="gastoList"></div>
+      <div id="emptyState" class="empty-state">Aún no hay gastos registrados. Agrega el primero arriba ↑</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Balance entre los 4</h2>
+      <span class="tag">Lo pagado vs. lo que le toca (25%)</span>
+    </div>
+    <div class="balance-grid" id="balanceGrid"></div>
+    <div id="settleList" class="settle-list"></div>
+  </section>
+
+</div>
+
+<footer>Tortuguero, Costa Rica · viaje 2026</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============ CONFIGURACIÓN SUPABASE ============
+   1. Crea un proyecto nuevo en https://supabase.com
+   2. Ve a SQL Editor y ejecuta:
+
+      create table gastos_tortuguero (
+        id uuid default gen_random_uuid() primary key,
+        descripcion text not null,
+        categoria text not null,
+        monto numeric not null,
+        pagado_por text not null,
+        fecha date default current_date,
+        created_at timestamptz default now()
+      );
+      alter table gastos_tortuguero enable row level security;
+      create policy "acceso publico" on gastos_tortuguero for all using (true) with check (true);
+
+   3. Pega tu URL y anon key abajo (Project Settings → API).
+=================================================== */
+const SUPABASE_URL = "https://jztvonoiitoyjgecunxj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dHZvbm9paXRveWpnZWN1bnhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTg2MDQsImV4cCI6MjA5NTY3NDYwNH0.eP1s7qqZEIGI7MWbJZ3sFiPdszLLMQzv8-ES5OD2F2A";
+
+const sb = (SUPABASE_URL.startsWith("http"))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const PERSONAS = ["Kathy","Adriana","Fernanda","Marvin"];
+const CATEGORIAS = [
+  {name:"Tour a Tortuguero", icon:"🚤"},
+  {name:"Estadía", icon:"🏝️"},
+  {name:"Tour de canoas / avistamiento", icon:"🐢"},
+  {name:"Alimentación", icon:"🍽️"},
+  {name:"Transporte", icon:"🚌"},
+  {name:"Otro", icon:"📌"}
+];
+
+let gastos = [];
+
+function showBanner(msg){
+  const b = document.getElementById('statusBanner');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+
+function fmt(n){
+  return Math.round(n).toLocaleString('es-CR');
+}
+
+function drawRiverNodes(){
+  const stops = [
+    {x:40, y:90, label:"01 · Salida", title:"Tour a Tortuguero"},
+    {x:300, y:60, label:"02 · Llegada", title:"Estadía"},
+    {x:560, y:80, label:"03 · Canal", title:"Canoas · Avistamiento"},
+    {x:820, y:55, label:"04 · Regreso", title:"Cierre de cuentas"}
+  ];
+  const g = document.getElementById('riverNodes');
+  g.innerHTML = stops.map(s => `
+    <circle class="node-dot" cx="${s.x}" cy="${s.y}" r="6"></circle>
+    <text class="node-label" x="${s.x}" y="${s.y-18}">${s.label}</text>
+    <text class="node-title" x="${s.x}" y="${s.y+26}" text-anchor="${s.x>700?'end':'start'}">${s.title}</text>
+  `).join('');
+}
+
+async function loadGastos(){
+  if(!sb){
+    showBanner("⚠ Falta configurar Supabase: edita SUPABASE_URL y SUPABASE_ANON_KEY en el código.");
+    render();
+    return;
+  }
+  const { data, error } = await sb.from('gastos_tortuguero').select('*').order('created_at', {ascending:false});
+  if(error){ showBanner("Error cargando gastos: " + error.message); return; }
+  gastos = data || [];
+  render();
+}
+
+async function addGasto(){
+  const desc = document.getElementById('f-desc').value.trim();
+  const cat = document.getElementById('f-cat').value;
+  const monto = parseFloat(document.getElementById('f-monto').value);
+  const quien = document.getElementById('f-quien').value;
+  const fecha = document.getElementById('f-fecha').value || new Date().toISOString().slice(0,10);
+
+  if(!desc || !monto || monto <= 0){
+    showBanner("Completa la descripción y un monto válido.");
+    return;
+  }
+  if(!sb){
+    showBanner("⚠ Configura Supabase antes de guardar gastos.");
+    return;
+  }
+
+  const tempId = 'temp-' + Date.now();
+  const optimistic = {id: tempId, descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, created_at:new Date().toISOString()};
+  gastos.unshift(optimistic);
+  render();
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-monto').value='';
+
+  const { data, error } = await sb.from('gastos_tortuguero').insert([
+    {descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha}
+  ]).select();
+
+  if(error){
+    gastos = gastos.filter(g => g.id !== tempId);
+    render();
+    showBanner("No se pudo guardar: " + error.message);
+    return;
+  }
+  gastos = gastos.map(g => g.id === tempId ? data[0] : g);
+  render();
+}
+
+async function deleteGasto(id){
+  const prev = gastos;
+  gastos = gastos.filter(g => g.id !== id);
+  render();
+  if(!sb) return;
+  const { error } = await sb.from('gastos_tortuguero').delete().eq('id', id);
+  if(error){
+    gastos = prev;
+    render();
+    showBanner("No se pudo eliminar: " + error.message);
+  }
+}
+
+function render(){
+  const totalGeneral = gastos.reduce((s,g)=>s+Number(g.monto),0);
+  document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
+  document.getElementById('totalGastosTag').textContent = gastos.length + (gastos.length===1?" gasto":" gastos");
+
+  // por categoria
+  const catGrid = document.getElementById('catGrid');
+  catGrid.innerHTML = CATEGORIAS.map(c=>{
+    const subtotal = gastos.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
+    return `<div class="cat-card">
+      <span class="icon">${c.icon}</span>
+      <div class="name">${c.name}</div>
+      <div class="amt">₡${fmt(subtotal)}</div>
+    </div>`;
+  }).join('');
+
+  // lista
+  const list = document.getElementById('gastoList');
+  const empty = document.getElementById('emptyState');
+  if(gastos.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    list.innerHTML = gastos.map(g => `
+      <div class="gasto-row">
+        <span class="cat-pill">${g.categoria}</span>
+        <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}</small></div>
+        <div class="g-person">${g.pagado_por}</div>
+        <div class="g-monto">₡${fmt(g.monto)}</div>
+        <div></div>
+        <button class="btn-del" onclick="deleteGasto('${g.id}')">Eliminar</button>
+      </div>
+    `).join('');
+  }
+
+  // balance
+  const share = totalGeneral / 4;
+  const balanceGrid = document.getElementById('balanceGrid');
+  const balances = PERSONAS.map(p=>{
+    const paid = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
+    return {persona:p, paid, balance: paid - share};
+  });
+
+  balanceGrid.innerHTML = balances.map(b=>{
+    const cls = Math.abs(b.balance) < 1 ? 'zero' : (b.balance > 0 ? 'positive' : 'negative');
+    const tagText = Math.abs(b.balance) < 1
+      ? 'Al día'
+      : (b.balance > 0 ? `Le deben ₡${fmt(b.balance)}` : `Debe ₡${fmt(Math.abs(b.balance))}`);
+    return `<div class="person-card">
+      <div class="who">${b.persona}</div>
+      <div class="paid">Pagó <b>₡${fmt(b.paid)}</b></div>
+      <div class="paid">Le toca <b>₡${fmt(share)}</b></div>
+      <span class="balance-tag ${cls}">${tagText}</span>
+    </div>`;
+  }).join('');
+
+  // settle up
+  document.getElementById('settleList').innerHTML = settleUp(balances);
+}
+
+function settleUp(balances){
+  const debtors = balances.filter(b=>b.balance < -1).map(b=>({...b, remaining: -b.balance})).sort((a,b)=>b.remaining-a.remaining);
+  const creditors = balances.filter(b=>b.balance > 1).map(b=>({...b, remaining: b.balance})).sort((a,b)=>b.remaining-a.remaining);
+
+  if(debtors.length === 0 || creditors.length === 0){
+    return `<div class="settle-row">Todos están al día. 🎉</div>`;
+  }
+
+  const rows = [];
+  let di = 0, ci = 0;
+  while(di < debtors.length && ci < creditors.length){
+    const d = debtors[di], c = creditors[ci];
+    const amt = Math.min(d.remaining, c.remaining);
+    rows.push(`<div class="settle-row"><b>${d.persona}</b> <span class="arrow">→</span> <b>${c.persona}</b><span class="amt">₡${fmt(amt)}</span></div>`);
+    d.remaining -= amt;
+    c.remaining -= amt;
+    if(d.remaining <= 1) di++;
+    if(c.remaining <= 1) ci++;
+  }
+  return rows.join('');
+}
+
+document.getElementById('btnAdd').addEventListener('click', addGasto);
+document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+
+drawRiverNodes();
+loadGastos();
+</script>
+</body>
+</html>
