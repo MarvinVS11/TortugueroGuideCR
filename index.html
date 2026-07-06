@@ -246,6 +246,26 @@
     display:none;
   }
   .status-banner.show{display:block;}
+
+  .view-toggle{
+    display:flex;align-items:center;gap:10px;margin-bottom:20px;
+  }
+  .view-toggle label{margin:0;}
+  .view-toggle select{width:auto;min-width:220px;}
+
+  .personal-card{
+    border:1px solid var(--line);border-radius:14px;padding:28px;
+    background:linear-gradient(120deg, var(--palm-deep), rgba(94,234,212,0.06));
+    text-align:center;max-width:360px;margin:0 auto;
+  }
+  .personal-card .who{font-family:'Fraunces',serif;font-size:24px;margin-bottom:16px;}
+  .personal-card .row{display:flex;justify-content:space-between;font-size:13.5px;color:rgba(220,237,232,0.6);padding:8px 0;border-bottom:1px solid var(--line);}
+  .personal-card .row:last-of-type{border-bottom:none;}
+  .personal-card .row b{color:var(--moonlight);font-family:'IBM Plex Mono',monospace;}
+  .personal-note{
+    text-align:center;font-size:12.5px;color:rgba(220,237,232,0.4);
+    margin-top:14px;
+  }
 </style>
 </head>
 <body>
@@ -313,14 +333,30 @@
 
   <section>
     <div class="section-head">
-      <h2>Resumen por categoría</h2>
+      <h2>Resumen</h2>
       <span class="tag" id="totalGastosTag">0 gastos</span>
     </div>
-    <div class="total-strip">
-      <span class="label">Total del viaje</span>
-      <span class="value">₡<span id="totalGeneral">0</span></span>
+
+    <div class="view-toggle">
+      <label for="viewSelector">Vista</label>
+      <select id="viewSelector">
+        <option value="grupo">Grupo completo (con total)</option>
+        <option value="Kathy">Solo mi parte — Kathy</option>
+        <option value="Adriana">Solo mi parte — Adriana</option>
+        <option value="Fernanda">Solo mi parte — Fernanda</option>
+        <option value="Marvin">Solo mi parte — Marvin</option>
+      </select>
     </div>
-    <div class="cat-grid" id="catGrid"></div>
+
+    <div id="totalStripWrap">
+      <div class="total-strip">
+        <span class="label">Total del viaje</span>
+        <span class="value">₡<span id="totalGeneral">0</span></span>
+      </div>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+
+    <div id="personalCardWrap" style="display:none;"></div>
   </section>
 
   <section>
@@ -336,7 +372,7 @@
   <section>
     <div class="section-head">
       <h2>Balance entre los 4</h2>
-      <span class="tag">Lo pagado vs. lo que le toca (25%)</span>
+      <span class="tag" id="balanceTag">Lo pagado vs. lo que le toca (25%)</span>
     </div>
     <div class="balance-grid" id="balanceGrid"></div>
     <div id="settleList" class="settle-list"></div>
@@ -474,10 +510,22 @@ async function deleteGasto(id){
 
 function render(){
   const totalGeneral = gastos.reduce((s,g)=>s+Number(g.monto),0);
+  const share = totalGeneral / 4;
+  const view = document.getElementById('viewSelector').value; // 'grupo' o nombre de persona
+  const isPersonal = view !== 'grupo';
+
   document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
   document.getElementById('totalGastosTag').textContent = gastos.length + (gastos.length===1?" gasto":" gastos");
 
-  // por categoria
+  // --- toggle: total del grupo vs. tarjeta personal ---
+  document.getElementById('totalStripWrap').style.display = isPersonal ? 'none' : 'block';
+  document.getElementById('personalCardWrap').style.display = isPersonal ? 'block' : 'none';
+  document.getElementById('balanceGrid').style.display = isPersonal ? 'none' : 'grid';
+  document.getElementById('balanceTag').textContent = isPersonal
+    ? 'Vista individual — no se muestra el total del grupo'
+    : 'Lo pagado vs. lo que le toca (25%)';
+
+  // por categoria (solo en vista grupo)
   const catGrid = document.getElementById('catGrid');
   catGrid.innerHTML = CATEGORIAS.map(c=>{
     const subtotal = gastos.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
@@ -488,15 +536,19 @@ function render(){
     </div>`;
   }).join('');
 
-  // lista
+  // lista de gastos
   const list = document.getElementById('gastoList');
   const empty = document.getElementById('emptyState');
-  if(gastos.length === 0){
+  const visibleGastos = isPersonal ? gastos.filter(g=>g.pagado_por===view) : gastos;
+  if(visibleGastos.length === 0){
     list.innerHTML = '';
     empty.style.display = 'block';
+    empty.textContent = isPersonal
+      ? `${view} aún no ha registrado gastos.`
+      : 'Aún no hay gastos registrados. Agrega el primero arriba ↑';
   } else {
     empty.style.display = 'none';
-    list.innerHTML = gastos.map(g => `
+    list.innerHTML = visibleGastos.map(g => `
       <div class="gasto-row">
         <span class="cat-pill">${g.categoria}</span>
         <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}</small></div>
@@ -508,14 +560,13 @@ function render(){
     `).join('');
   }
 
-  // balance
-  const share = totalGeneral / 4;
-  const balanceGrid = document.getElementById('balanceGrid');
+  // balances de las 4 personas (siempre se calculan, se muestran distinto según la vista)
   const balances = PERSONAS.map(p=>{
     const paid = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
     return {persona:p, paid, balance: paid - share};
   });
 
+  const balanceGrid = document.getElementById('balanceGrid');
   balanceGrid.innerHTML = balances.map(b=>{
     const cls = Math.abs(b.balance) < 1 ? 'zero' : (b.balance > 0 ? 'positive' : 'negative');
     const tagText = Math.abs(b.balance) < 1
@@ -529,34 +580,58 @@ function render(){
     </div>`;
   }).join('');
 
-  // settle up
-  document.getElementById('settleList').innerHTML = settleUp(balances);
+  // tarjeta personal (sin revelar el total del grupo)
+  if(isPersonal){
+    const mine = balances.find(b=>b.persona===view);
+    const cls = Math.abs(mine.balance) < 1 ? 'zero' : (mine.balance > 0 ? 'positive' : 'negative');
+    const tagText = Math.abs(mine.balance) < 1
+      ? 'Estás al día'
+      : (mine.balance > 0 ? `Te deben ₡${fmt(mine.balance)}` : `Debes ₡${fmt(Math.abs(mine.balance))}`);
+    document.getElementById('personalCardWrap').innerHTML = `
+      <div class="personal-card">
+        <div class="who">${view}</div>
+        <div class="row"><span>Lo que pagaste</span><b>₡${fmt(mine.paid)}</b></div>
+        <div class="row"><span>Tu parte (25%)</span><b>₡${fmt(share)}</b></div>
+        <span class="balance-tag ${cls}" style="margin-top:14px;">${tagText}</span>
+      </div>
+      <div class="personal-note">Esta vista no muestra el total del viaje ni lo que pagaron los demás.</div>
+    `;
+  }
+
+  // settle up — en vista personal solo se muestran los movimientos que le incumben
+  const allSettle = settleUp(balances);
+  document.getElementById('settleList').innerHTML = isPersonal
+    ? allSettle.filter(r => r.from === view || r.to === view).map(rowHtml).join('') || '<div class="settle-row">No tienes movimientos pendientes. 🎉</div>'
+    : allSettle.map(rowHtml).join('');
+}
+
+function rowHtml(r){
+  return `<div class="settle-row"><b>${r.from}</b> <span class="arrow">→</span> <b>${r.to}</b><span class="amt">₡${fmt(r.amount)}</span></div>`;
 }
 
 function settleUp(balances){
   const debtors = balances.filter(b=>b.balance < -1).map(b=>({...b, remaining: -b.balance})).sort((a,b)=>b.remaining-a.remaining);
   const creditors = balances.filter(b=>b.balance > 1).map(b=>({...b, remaining: b.balance})).sort((a,b)=>b.remaining-a.remaining);
 
-  if(debtors.length === 0 || creditors.length === 0){
-    return `<div class="settle-row">Todos están al día. 🎉</div>`;
-  }
+  if(debtors.length === 0 || creditors.length === 0) return [];
 
   const rows = [];
   let di = 0, ci = 0;
   while(di < debtors.length && ci < creditors.length){
     const d = debtors[di], c = creditors[ci];
     const amt = Math.min(d.remaining, c.remaining);
-    rows.push(`<div class="settle-row"><b>${d.persona}</b> <span class="arrow">→</span> <b>${c.persona}</b><span class="amt">₡${fmt(amt)}</span></div>`);
+    rows.push({from:d.persona, to:c.persona, amount:amt});
     d.remaining -= amt;
     c.remaining -= amt;
     if(d.remaining <= 1) di++;
     if(c.remaining <= 1) ci++;
   }
-  return rows.join('');
+  return rows;
 }
 
 document.getElementById('btnAdd').addEventListener('click', addGasto);
 document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+document.getElementById('viewSelector').addEventListener('change', render);
 
 drawRiverNodes();
 loadGastos();
