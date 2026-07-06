@@ -177,6 +177,7 @@
     padding:14px 4px;
     border-bottom:1px solid var(--line);
   }
+  .gasto-row > *{min-width:0;}
   .gasto-row:last-child{border-bottom:none;}
   .cat-pill{
     font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;
@@ -184,10 +185,29 @@
     border:1px solid var(--glow-dim);border-radius:20px;
     padding:4px 10px;white-space:nowrap;
   }
-  .g-desc{font-size:14.5px;}
+  .g-desc{font-size:14.5px;overflow-wrap:break-word;word-break:break-word;}
   .g-desc small{display:block;color:rgba(220,237,232,0.45);font-size:12px;margin-top:2px;}
   .g-person{font-size:13px;color:rgba(220,237,232,0.7);white-space:nowrap;}
   .g-monto{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;white-space:nowrap;}
+
+  @media (max-width:640px){
+    .gasto-row{
+      grid-template-columns:1fr 1fr;
+      grid-template-areas:
+        "pill del"
+        "desc desc"
+        "person monto";
+      row-gap:8px;
+      padding:16px 4px;
+    }
+    .cat-pill{grid-area:pill;justify-self:start;}
+    .g-desc{grid-area:desc;font-size:14px;}
+    .g-person{grid-area:person;justify-self:start;}
+    .g-monto{grid-area:monto;justify-self:end;}
+    .btn-del{grid-area:del;justify-self:end;}
+    .g-spacer{display:none;}
+  }
+
   .empty-state{
     text-align:center;padding:50px 20px;color:rgba(220,237,232,0.45);
     font-size:14px;
@@ -554,7 +574,7 @@ function render(){
         <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}</small></div>
         <div class="g-person">${g.pagado_por}</div>
         <div class="g-monto">₡${fmt(g.monto)}</div>
-        <div></div>
+        <div class="g-spacer"></div>
         <button class="btn-del" onclick="deleteGasto('${g.id}')">Eliminar</button>
       </div>
     `).join('');
