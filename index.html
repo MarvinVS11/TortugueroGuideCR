@@ -123,15 +123,20 @@
   }
   @media (max-width:860px){ .form-grid{grid-template-columns:1fr 1fr;} }
 
-  .pay-inline{
-    display:flex;gap:8px;margin-top:14px;
+  .pay-panel{
+    border-color:var(--glow-dim);
+    background:linear-gradient(120deg, rgba(94,234,212,0.08), var(--palm-deep));
   }
-  .pay-inline input{
-    flex:1;min-width:0;padding:8px 10px;font-size:13px;
+  .pay-hint{
+    font-size:13px;color:rgba(220,237,232,0.65);margin:0 0 16px;line-height:1.5;
   }
-  .pay-inline button{
-    padding:8px 14px;font-size:13px;flex-shrink:0;
+  .pay-form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:12px;
+    align-items:end;
   }
+  @media (max-width:640px){ .pay-form-grid{grid-template-columns:1fr 1fr;} }
   label{
     display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
     letter-spacing:0.06em;text-transform:uppercase;color:rgba(220,237,232,0.55);
@@ -319,7 +324,7 @@
 
     <div class="section-head">
       <h2>Registrar gasto</h2>
-      <span class="tag">Se divide 25% · 25% · 25% · 25%</span>
+      <span class="tag">Todo lo pagas tú · se divide 25% entre las 4</span>
     </div>
     <div class="panel">
       <div class="form-grid">
@@ -343,19 +348,35 @@
           <input id="f-monto" type="number" min="0" step="1" placeholder="0">
         </div>
         <div>
-          <label for="f-quien">Pagó</label>
-          <select id="f-quien">
-            <option>Kathy</option>
-            <option>Adriana</option>
-            <option>Fernanda</option>
-            <option>Marvin</option>
-          </select>
-        </div>
-        <div>
           <label for="f-fecha">Fecha</label>
           <input id="f-fecha" type="date">
         </div>
-        <button id="btnAdd">Agregar</button>
+        <button id="btnAdd">Agregar gasto</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>💸 Pago recibido</h2>
+      <span class="tag">Cuando alguna te reembolsa — esto NO es un gasto</span>
+    </div>
+    <div class="panel pay-panel">
+      <p class="pay-hint">Usa esto cuando Kathy, Adriana o Fernanda te paguen su parte. Se resta directo de lo que te deben — no lo agregues arriba como gasto.</p>
+      <div class="pay-form-grid">
+        <div>
+          <label for="p-persona">Quién te pagó</label>
+          <select id="p-persona">
+            <option>Kathy</option>
+            <option>Adriana</option>
+            <option>Fernanda</option>
+          </select>
+        </div>
+        <div>
+          <label for="p-monto">Monto ₡</label>
+          <input id="p-monto" type="number" min="0" step="1" placeholder="0">
+        </div>
+        <button id="btnRegistrarPago">Registrar pago recibido</button>
       </div>
     </div>
   </section>
@@ -497,7 +518,7 @@ async function addGasto(){
   const desc = document.getElementById('f-desc').value.trim();
   const cat = document.getElementById('f-cat').value;
   const monto = parseFloat(document.getElementById('f-monto').value);
-  const quien = document.getElementById('f-quien').value;
+  const quien = "Marvin";
   const fecha = document.getElementById('f-fecha').value || new Date().toISOString().slice(0,10);
 
   if(!desc || !monto || monto <= 0){
@@ -543,12 +564,13 @@ async function deleteGasto(id){
   }
 }
 
-async function registrarPago(persona){
-  const input = document.getElementById('pay-' + persona);
+async function registrarPago(){
+  const persona = document.getElementById('p-persona').value;
+  const input = document.getElementById('p-monto');
   const monto = parseFloat(input.value);
 
   if(!monto || monto <= 0){
-    showBanner("Ingresa un monto válido para el pago de " + persona + ".");
+    showBanner("Ingresa un monto válido para el pago recibido.");
     return;
   }
   if(!sb){
@@ -659,10 +681,6 @@ function render(){
       <div class="paid">Le toca <b>₡${fmt(share)}</b></div>
       <div class="paid">Ha cubierto <b>₡${fmt(b.cubierto)}</b></div>
       <span class="balance-tag ${cls}">${tagText}</span>
-      <div class="pay-inline">
-        <input type="number" min="0" step="1" placeholder="Monto" id="pay-${b.persona}">
-        <button onclick="registrarPago('${b.persona}')">Registrar pago</button>
-      </div>
     </div>`;
   }).join('');
 
@@ -716,6 +734,7 @@ function render(){
 }
 
 document.getElementById('btnAdd').addEventListener('click', addGasto);
+document.getElementById('btnRegistrarPago').addEventListener('click', registrarPago);
 document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
 document.getElementById('viewSelector').addEventListener('change', render);
 
