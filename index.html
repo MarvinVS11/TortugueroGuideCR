@@ -122,6 +122,35 @@
     align-items:end;
   }
   @media (max-width:860px){ .form-grid{grid-template-columns:1fr 1fr;} }
+
+  .abono-form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 1.4fr auto;
+    gap:12px;
+    align-items:end;
+  }
+  @media (max-width:860px){ .abono-form-grid{grid-template-columns:1fr 1fr;} }
+
+  .abono-row{
+    display:grid;
+    grid-template-columns:auto 1fr auto auto;
+    gap:14px;align-items:center;
+    padding:14px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .abono-row > *{min-width:0;}
+  .abono-row:last-child{border-bottom:none;}
+  .abono-persona{font-family:'Fraunces',serif;font-size:14.5px;color:var(--moonlight);}
+  .abono-nota{font-size:13px;color:rgba(220,237,232,0.55);overflow-wrap:break-word;}
+  .abono-nota small{display:block;color:rgba(220,237,232,0.4);font-size:11.5px;margin-top:2px;}
+  .abono-monto{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;color:var(--glow);white-space:nowrap;}
+  @media (max-width:640px){
+    .abono-row{grid-template-columns:1fr auto;grid-template-areas:"persona del" "nota nota" "monto monto";row-gap:6px;}
+    .abono-persona{grid-area:persona;}
+    .btn-del{grid-area:del;justify-self:end;}
+    .abono-nota{grid-area:nota;}
+    .abono-monto{grid-area:monto;}
+  }
   label{
     display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
     letter-spacing:0.06em;text-transform:uppercase;color:rgba(220,237,232,0.55);
@@ -159,17 +188,6 @@
   }
   .btn-del:hover{color:var(--coral);background:transparent;}
 
-  .btn-toggle-pagado{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
-    background:transparent;color:rgba(220,237,232,0.55);
-    border:1px solid var(--line);border-radius:20px;
-    padding:6px 12px;white-space:nowrap;
-  }
-  .btn-toggle-pagado:hover{border-color:var(--glow);color:var(--glow);background:transparent;}
-  .btn-toggle-pagado.is-on{
-    background:rgba(94,234,212,0.14);color:var(--glow);border-color:var(--glow-dim);
-  }
-
   /* ---------- CATEGORY SUMMARY ---------- */
   .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:20px;}
   .cat-card{
@@ -183,14 +201,13 @@
   /* ---------- LIST ---------- */
   .gasto-row{
     display:grid;
-    grid-template-columns:auto 1fr auto auto auto auto;
+    grid-template-columns:auto 1fr auto auto auto;
     gap:14px;align-items:center;
     padding:14px 4px;
     border-bottom:1px solid var(--line);
   }
   .gasto-row > *{min-width:0;}
   .gasto-row:last-child{border-bottom:none;}
-  .gasto-row.is-pagado{opacity:0.55;}
   .cat-pill{
     font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;
     text-transform:uppercase;color:var(--glow);
@@ -208,8 +225,7 @@
       grid-template-areas:
         "pill del"
         "desc desc"
-        "person monto"
-        "toggle toggle";
+        "person monto";
       row-gap:8px;
       padding:16px 4px;
     }
@@ -218,7 +234,6 @@
     .g-person{grid-area:person;justify-self:start;}
     .g-monto{grid-area:monto;justify-self:end;}
     .btn-del{grid-area:del;justify-self:end;}
-    .btn-toggle-pagado{grid-area:toggle;justify-self:start;}
   }
 
   .empty-state{
@@ -404,8 +419,44 @@
 
   <section>
     <div class="section-head">
-      <h2>Balance entre los 4</h2>
-      <span class="tag" id="balanceTag">Lo pagado vs. lo que le toca (25%)</span>
+      <h2>Abonos a Marvin</h2>
+      <span class="tag">Lo que cada quien te ha reembolsado</span>
+    </div>
+    <div class="panel">
+      <div class="abono-form-grid">
+        <div>
+          <label for="a-persona">Quién abona</label>
+          <select id="a-persona">
+            <option>Kathy</option>
+            <option>Adriana</option>
+            <option>Fernanda</option>
+          </select>
+        </div>
+        <div>
+          <label for="a-monto">Monto ₡</label>
+          <input id="a-monto" type="number" min="0" step="1" placeholder="0">
+        </div>
+        <div>
+          <label for="a-fecha">Fecha</label>
+          <input id="a-fecha" type="date">
+        </div>
+        <div>
+          <label for="a-nota">Nota (opcional)</label>
+          <input id="a-nota" type="text" placeholder="Ej. Sinpe móvil">
+        </div>
+        <button id="btnAddAbono">Registrar abono</button>
+      </div>
+    </div>
+    <div class="panel" style="padding:6px 20px;margin-top:14px;">
+      <div id="abonoList"></div>
+      <div id="abonoEmptyState" class="empty-state">Aún no se ha registrado ningún abono.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Cuánto te deben</h2>
+      <span class="tag" id="balanceTag">Su parte (25%) menos lo que ya te han abonado</span>
     </div>
     <div class="balance-grid" id="balanceGrid"></div>
     <div id="settleList" class="settle-list"></div>
@@ -453,6 +504,7 @@ const CATEGORIAS = [
 ];
 
 let gastos = [];
+let abonos = [];
 
 function showBanner(msg){
   const b = document.getElementById('statusBanner');
@@ -479,15 +531,20 @@ function drawRiverNodes(){
   `).join('');
 }
 
-async function loadGastos(){
+async function loadData(){
   if(!sb){
     showBanner("⚠ Falta configurar Supabase: edita SUPABASE_URL y SUPABASE_ANON_KEY en el código.");
     render();
     return;
   }
-  const { data, error } = await sb.from('gastos_tortuguero').select('*').order('created_at', {ascending:false});
-  if(error){ showBanner("Error cargando gastos: " + error.message); return; }
-  gastos = data || [];
+  const [gastosRes, abonosRes] = await Promise.all([
+    sb.from('gastos_tortuguero').select('*').order('created_at', {ascending:false}),
+    sb.from('abonos_tortuguero').select('*').order('created_at', {ascending:false})
+  ]);
+  if(gastosRes.error){ showBanner("Error cargando gastos: " + gastosRes.error.message); return; }
+  if(abonosRes.error){ showBanner("Error cargando abonos: " + abonosRes.error.message); return; }
+  gastos = gastosRes.data || [];
+  abonos = abonosRes.data || [];
   render();
 }
 
@@ -508,14 +565,14 @@ async function addGasto(){
   }
 
   const tempId = 'temp-' + Date.now();
-  const optimistic = {id: tempId, descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, pagado:false, created_at:new Date().toISOString()};
+  const optimistic = {id: tempId, descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, created_at:new Date().toISOString()};
   gastos.unshift(optimistic);
   render();
   document.getElementById('f-desc').value='';
   document.getElementById('f-monto').value='';
 
   const { data, error } = await sb.from('gastos_tortuguero').insert([
-    {descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, pagado:false}
+    {descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha}
   ]).select();
 
   if(error){
@@ -526,21 +583,6 @@ async function addGasto(){
   }
   gastos = gastos.map(g => g.id === tempId ? data[0] : g);
   render();
-}
-
-async function togglePagado(id){
-  const g = gastos.find(x => x.id === id);
-  if(!g) return;
-  const prevValue = g.pagado;
-  g.pagado = !g.pagado;
-  render();
-  if(!sb) return;
-  const { error } = await sb.from('gastos_tortuguero').update({pagado: g.pagado}).eq('id', id);
-  if(error){
-    g.pagado = prevValue;
-    render();
-    showBanner("No se pudo actualizar: " + error.message);
-  }
 }
 
 async function deleteGasto(id){
@@ -556,19 +598,64 @@ async function deleteGasto(id){
   }
 }
 
+async function addAbono(){
+  const persona = document.getElementById('a-persona').value;
+  const monto = parseFloat(document.getElementById('a-monto').value);
+  const fecha = document.getElementById('a-fecha').value || new Date().toISOString().slice(0,10);
+  const nota = document.getElementById('a-nota').value.trim();
+
+  if(!monto || monto <= 0){
+    showBanner("Ingresa un monto válido para el abono.");
+    return;
+  }
+  if(!sb){
+    showBanner("⚠ Configura Supabase antes de guardar abonos.");
+    return;
+  }
+
+  const tempId = 'temp-' + Date.now();
+  const optimistic = {id: tempId, persona, monto, fecha, nota, created_at:new Date().toISOString()};
+  abonos.unshift(optimistic);
+  render();
+  document.getElementById('a-monto').value='';
+  document.getElementById('a-nota').value='';
+
+  const { data, error } = await sb.from('abonos_tortuguero').insert([
+    {persona, monto, fecha, nota: nota || null}
+  ]).select();
+
+  if(error){
+    abonos = abonos.filter(a => a.id !== tempId);
+    render();
+    showBanner("No se pudo guardar el abono: " + error.message);
+    return;
+  }
+  abonos = abonos.map(a => a.id === tempId ? data[0] : a);
+  render();
+}
+
+async function deleteAbono(id){
+  const prev = abonos;
+  abonos = abonos.filter(a => a.id !== id);
+  render();
+  if(!sb) return;
+  const { error } = await sb.from('abonos_tortuguero').delete().eq('id', id);
+  if(error){
+    abonos = prev;
+    render();
+    showBanner("No se pudo eliminar el abono: " + error.message);
+  }
+}
+
 function render(){
-  const pendientes = gastos.filter(g => !g.pagado);
-  const liquidados = gastos.filter(g => g.pagado);
-  const totalGeneral = pendientes.reduce((s,g)=>s+Number(g.monto),0);
-  const totalLiquidado = liquidados.reduce((s,g)=>s+Number(g.monto),0);
+  const totalGeneral = gastos.reduce((s,g)=>s+Number(g.monto),0);
   const share = totalGeneral / 4;
   const view = document.getElementById('viewSelector').value; // 'grupo' o nombre de persona
   const isPersonal = view !== 'grupo';
+  const DEUDORAS = ["Kathy","Adriana","Fernanda"];
 
   document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
-  document.getElementById('totalGastosTag').textContent =
-    gastos.length + (gastos.length===1?" gasto":" gastos") +
-    (liquidados.length ? ` · ${liquidados.length} ya pagado(s), no sumado(s)` : '');
+  document.getElementById('totalGastosTag').textContent = gastos.length + (gastos.length===1?" gasto":" gastos");
 
   // --- toggle: total del grupo vs. tarjeta personal ---
   document.getElementById('totalStripWrap').style.display = isPersonal ? 'none' : 'block';
@@ -576,12 +663,12 @@ function render(){
   document.getElementById('balanceGrid').style.display = isPersonal ? 'none' : 'grid';
   document.getElementById('balanceTag').textContent = isPersonal
     ? 'Vista individual — no se muestra el total del grupo'
-    : 'Lo pagado vs. lo que le toca (25%) · solo gastos pendientes';
+    : 'Su parte (25%) menos lo que ya te han abonado';
 
-  // por categoria (solo gastos pendientes, vista grupo)
+  // por categoria (vista grupo)
   const catGrid = document.getElementById('catGrid');
   catGrid.innerHTML = CATEGORIAS.map(c=>{
-    const subtotal = pendientes.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
+    const subtotal = gastos.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
     return `<div class="cat-card">
       <span class="icon">${c.icon}</span>
       <div class="name">${c.name}</div>
@@ -589,7 +676,7 @@ function render(){
     </div>`;
   }).join('');
 
-  // lista de gastos (se muestran todos, pendientes y ya pagados)
+  // lista de gastos
   const list = document.getElementById('gastoList');
   const empty = document.getElementById('emptyState');
   const visibleGastos = isPersonal ? gastos.filter(g=>g.pagado_por===view) : gastos;
@@ -602,33 +689,64 @@ function render(){
   } else {
     empty.style.display = 'none';
     list.innerHTML = visibleGastos.map(g => `
-      <div class="gasto-row ${g.pagado ? 'is-pagado' : ''}">
+      <div class="gasto-row">
         <span class="cat-pill">${g.categoria}</span>
-        <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}${g.pagado ? ' · ✓ Pagado' : ''}</small></div>
+        <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}</small></div>
         <div class="g-person">${g.pagado_por}</div>
         <div class="g-monto">₡${fmt(g.monto)}</div>
-        <button class="btn-toggle-pagado ${g.pagado ? 'is-on' : ''}" onclick="togglePagado('${g.id}')">${g.pagado ? '✓ Pagado' : 'Marcar pagado'}</button>
         <button class="btn-del" onclick="deleteGasto('${g.id}')">Eliminar</button>
       </div>
     `).join('');
   }
 
-  // balances de las 4 personas — solo con gastos pendientes
+  // lista de abonos
+  const abonoList = document.getElementById('abonoList');
+  const abonoEmpty = document.getElementById('abonoEmptyState');
+  const visibleAbonos = isPersonal ? abonos.filter(a=>a.persona===view) : abonos;
+  if(visibleAbonos.length === 0){
+    abonoList.innerHTML = '';
+    abonoEmpty.style.display = 'block';
+  } else {
+    abonoEmpty.style.display = 'none';
+    abonoList.innerHTML = visibleAbonos.map(a => `
+      <div class="abono-row">
+        <div class="abono-persona">${a.persona}</div>
+        <div class="abono-nota">${a.nota || 'Abono'}<small>${a.fecha || ''}</small></div>
+        <div class="abono-monto">₡${fmt(a.monto)}</div>
+        <button class="btn-del" onclick="deleteAbono('${a.id}')">Eliminar</button>
+      </div>
+    `).join('');
+  }
+
+  // balance: lo que cada una debe a Marvin = su parte (25%) - gastos que ella misma cubrió - abonos que ya dio
   const balances = PERSONAS.map(p=>{
-    const paid = pendientes.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
-    return {persona:p, paid, balance: paid - share};
+    const gastosPagados = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
+    const abonosDados = abonos.filter(a=>a.persona===p).reduce((s,a)=>s+Number(a.monto),0);
+    const cubierto = gastosPagados + abonosDados;
+    const pendiente = share - cubierto; // >0 = debe, <0 = pagó de más
+    return {persona:p, gastosPagados, abonosDados, cubierto, pendiente};
   });
 
   const balanceGrid = document.getElementById('balanceGrid');
   balanceGrid.innerHTML = balances.map(b=>{
-    const cls = Math.abs(b.balance) < 1 ? 'zero' : (b.balance > 0 ? 'positive' : 'negative');
-    const tagText = Math.abs(b.balance) < 1
+    if(b.persona === "Marvin"){
+      const totalAbonado = abonos.reduce((s,a)=>s+Number(a.monto),0);
+      const pendienteCobrar = balances.filter(x=>DEUDORAS.includes(x.persona)).reduce((s,x)=>s+Math.max(0,x.pendiente),0);
+      return `<div class="person-card">
+        <div class="who">Marvin</div>
+        <div class="paid">Ha pagado <b>₡${fmt(b.gastosPagados)}</b></div>
+        <div class="paid">Ha recibido <b>₡${fmt(totalAbonado)}</b></div>
+        <span class="balance-tag ${pendienteCobrar>1?'negative':'zero'}">${pendienteCobrar>1 ? `Pendiente por cobrar ₡${fmt(pendienteCobrar)}` : 'Todo cobrado'}</span>
+      </div>`;
+    }
+    const cls = Math.abs(b.pendiente) < 1 ? 'zero' : (b.pendiente > 0 ? 'negative' : 'positive');
+    const tagText = Math.abs(b.pendiente) < 1
       ? 'Al día'
-      : (b.balance > 0 ? `Le deben ₡${fmt(b.balance)}` : `Debe ₡${fmt(Math.abs(b.balance))}`);
+      : (b.pendiente > 0 ? `Debe ₡${fmt(b.pendiente)}` : `Pagó de más ₡${fmt(Math.abs(b.pendiente))}`);
     return `<div class="person-card">
       <div class="who">${b.persona}</div>
-      <div class="paid">Pagó <b>₡${fmt(b.paid)}</b></div>
       <div class="paid">Le toca <b>₡${fmt(share)}</b></div>
+      <div class="paid">Ha cubierto <b>₡${fmt(b.cubierto)}</b></div>
       <span class="balance-tag ${cls}">${tagText}</span>
     </div>`;
   }).join('');
@@ -636,58 +754,60 @@ function render(){
   // tarjeta personal (sin revelar el total del grupo)
   if(isPersonal){
     const mine = balances.find(b=>b.persona===view);
-    const cls = Math.abs(mine.balance) < 1 ? 'zero' : (mine.balance > 0 ? 'positive' : 'negative');
-    const tagText = Math.abs(mine.balance) < 1
-      ? 'Estás al día'
-      : (mine.balance > 0 ? `Te deben ₡${fmt(mine.balance)}` : `Debes ₡${fmt(Math.abs(mine.balance))}`);
-    document.getElementById('personalCardWrap').innerHTML = `
-      <div class="personal-card">
-        <div class="who">${view}</div>
-        <div class="row"><span>Lo que pagaste</span><b>₡${fmt(mine.paid)}</b></div>
-        <div class="row"><span>Tu parte (25%)</span><b>₡${fmt(share)}</b></div>
-        <span class="balance-tag ${cls}" style="margin-top:14px;">${tagText}</span>
-      </div>
-      <div class="personal-note">Esta vista no muestra el total del viaje ni lo que pagaron los demás.</div>
-    `;
+    if(view === "Marvin"){
+      const totalAbonado = abonos.reduce((s,a)=>s+Number(a.monto),0);
+      const pendienteCobrar = balances.filter(x=>DEUDORAS.includes(x.persona)).reduce((s,x)=>s+Math.max(0,x.pendiente),0);
+      document.getElementById('personalCardWrap').innerHTML = `
+        <div class="personal-card">
+          <div class="who">Marvin</div>
+          <div class="row"><span>Has pagado</span><b>₡${fmt(mine.gastosPagados)}</b></div>
+          <div class="row"><span>Has recibido</span><b>₡${fmt(totalAbonado)}</b></div>
+          <span class="balance-tag ${pendienteCobrar>1?'negative':'zero'}" style="margin-top:14px;">${pendienteCobrar>1 ? `Pendiente por cobrar ₡${fmt(pendienteCobrar)}` : 'Todo cobrado'}</span>
+        </div>
+        <div class="personal-note">Esta vista no muestra el total del viaje.</div>
+      `;
+    } else {
+      const cls = Math.abs(mine.pendiente) < 1 ? 'zero' : (mine.pendiente > 0 ? 'negative' : 'positive');
+      const tagText = Math.abs(mine.pendiente) < 1
+        ? 'Estás al día'
+        : (mine.pendiente > 0 ? `Debes ₡${fmt(mine.pendiente)} a Marvin` : `Pagaste de más ₡${fmt(Math.abs(mine.pendiente))}`);
+      document.getElementById('personalCardWrap').innerHTML = `
+        <div class="personal-card">
+          <div class="who">${view}</div>
+          <div class="row"><span>Tu parte (25%)</span><b>₡${fmt(share)}</b></div>
+          <div class="row"><span>Ya cubriste</span><b>₡${fmt(mine.cubierto)}</b></div>
+          <span class="balance-tag ${cls}" style="margin-top:14px;">${tagText}</span>
+        </div>
+        <div class="personal-note">Esta vista no muestra el total del viaje ni lo que deben las demás.</div>
+      `;
+    }
   }
 
-  // settle up — en vista personal solo se muestran los movimientos que le incumben
-  const allSettle = settleUp(balances);
-  document.getElementById('settleList').innerHTML = isPersonal
-    ? allSettle.filter(r => r.from === view || r.to === view).map(rowHtml).join('') || '<div class="settle-row">No tienes movimientos pendientes. 🎉</div>'
-    : allSettle.map(rowHtml).join('');
-}
+  // pendientes por cobrar — siempre hacia Marvin
+  const settleList = document.getElementById('settleList');
+  const pendientesRows = balances
+    .filter(b => DEUDORAS.includes(b.persona) && b.pendiente > 1)
+    .map(b => `<div class="settle-row"><b>${b.persona}</b> <span class="arrow">→</span> <b>Marvin</b><span class="amt">₡${fmt(b.pendiente)}</span></div>`);
 
-function rowHtml(r){
-  return `<div class="settle-row"><b>${r.from}</b> <span class="arrow">→</span> <b>${r.to}</b><span class="amt">₡${fmt(r.amount)}</span></div>`;
-}
-
-function settleUp(balances){
-  const debtors = balances.filter(b=>b.balance < -1).map(b=>({...b, remaining: -b.balance})).sort((a,b)=>b.remaining-a.remaining);
-  const creditors = balances.filter(b=>b.balance > 1).map(b=>({...b, remaining: b.balance})).sort((a,b)=>b.remaining-a.remaining);
-
-  if(debtors.length === 0 || creditors.length === 0) return [];
-
-  const rows = [];
-  let di = 0, ci = 0;
-  while(di < debtors.length && ci < creditors.length){
-    const d = debtors[di], c = creditors[ci];
-    const amt = Math.min(d.remaining, c.remaining);
-    rows.push({from:d.persona, to:c.persona, amount:amt});
-    d.remaining -= amt;
-    c.remaining -= amt;
-    if(d.remaining <= 1) di++;
-    if(c.remaining <= 1) ci++;
+  if(isPersonal){
+    settleList.innerHTML = view === "Marvin"
+      ? pendientesRows.join('') || '<div class="settle-row">Ya te pagaron todo. 🎉</div>'
+      : (balances.find(b=>b.persona===view).pendiente > 1
+          ? `<div class="settle-row"><b>${view}</b> <span class="arrow">→</span> <b>Marvin</b><span class="amt">₡${fmt(balances.find(b=>b.persona===view).pendiente)}</span></div>`
+          : '<div class="settle-row">Estás al día. 🎉</div>');
+  } else {
+    settleList.innerHTML = pendientesRows.join('') || '<div class="settle-row">Todas están al día. 🎉</div>';
   }
-  return rows;
 }
 
 document.getElementById('btnAdd').addEventListener('click', addGasto);
+document.getElementById('btnAddAbono').addEventListener('click', addAbono);
 document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+document.getElementById('a-fecha').value = new Date().toISOString().slice(0,10);
 document.getElementById('viewSelector').addEventListener('change', render);
 
 drawRiverNodes();
-loadGastos();
+loadData();
 </script>
 </body>
 </html>
