@@ -674,7 +674,7 @@ function render(){
     const gastosPagados = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
     const recibido = abonos.filter(a=>a.a_persona===p).reduce((s,a)=>s+Number(a.monto),0);
     const enviado = abonos.filter(a=>a.de_persona===p).reduce((s,a)=>s+Number(a.monto),0);
-    const balance = gastosPagados - share + recibido - enviado; // >0 = le deben, <0 = debe
+    const balance = gastosPagados - share + enviado - recibido; // >0 = le deben, <0 = debe
     return {persona:p, gastosPagados, recibido, enviado, balance};
   });
 
@@ -684,10 +684,14 @@ function render(){
     const tagText = Math.abs(b.balance) < 1
       ? 'Al día'
       : (b.balance > 0 ? `Le deben ₡${fmt(b.balance)}` : `Debe ₡${fmt(Math.abs(b.balance))}`);
+    const reembolsoLine = (b.enviado > 0 || b.recibido > 0)
+      ? `<div class="paid">${b.enviado > 0 ? `Reembolsó ₡${fmt(b.enviado)}` : ''}${b.enviado > 0 && b.recibido > 0 ? ' · ' : ''}${b.recibido > 0 ? `Recibió ₡${fmt(b.recibido)}` : ''}</div>`
+      : '';
     return `<div class="person-card">
       <div class="who">${b.persona}</div>
       <div class="paid">Pagó <b>₡${fmt(b.gastosPagados)}</b></div>
       <div class="paid">Le toca <b>₡${fmt(share)}</b></div>
+      ${reembolsoLine}
       <span class="balance-tag ${cls}">${tagText}</span>
     </div>`;
   }).join('');
