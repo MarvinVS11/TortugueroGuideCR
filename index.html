@@ -159,6 +159,17 @@
   }
   .btn-del:hover{color:var(--coral);background:transparent;}
 
+  .btn-toggle-pagado{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    background:transparent;color:rgba(220,237,232,0.55);
+    border:1px solid var(--line);border-radius:20px;
+    padding:6px 12px;white-space:nowrap;
+  }
+  .btn-toggle-pagado:hover{border-color:var(--glow);color:var(--glow);background:transparent;}
+  .btn-toggle-pagado.is-on{
+    background:rgba(94,234,212,0.14);color:var(--glow);border-color:var(--glow-dim);
+  }
+
   /* ---------- CATEGORY SUMMARY ---------- */
   .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:20px;}
   .cat-card{
@@ -179,6 +190,7 @@
   }
   .gasto-row > *{min-width:0;}
   .gasto-row:last-child{border-bottom:none;}
+  .gasto-row.is-pagado{opacity:0.55;}
   .cat-pill{
     font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;
     text-transform:uppercase;color:var(--glow);
@@ -196,7 +208,8 @@
       grid-template-areas:
         "pill del"
         "desc desc"
-        "person monto";
+        "person monto"
+        "toggle toggle";
       row-gap:8px;
       padding:16px 4px;
     }
@@ -205,7 +218,7 @@
     .g-person{grid-area:person;justify-self:start;}
     .g-monto{grid-area:monto;justify-self:end;}
     .btn-del{grid-area:del;justify-self:end;}
-    .g-spacer{display:none;}
+    .btn-toggle-pagado{grid-area:toggle;justify-self:start;}
   }
 
   .empty-state{
@@ -495,14 +508,14 @@ async function addGasto(){
   }
 
   const tempId = 'temp-' + Date.now();
-  const optimistic = {id: tempId, descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, created_at:new Date().toISOString()};
+  const optimistic = {id: tempId, descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, pagado:false, created_at:new Date().toISOString()};
   gastos.unshift(optimistic);
   render();
   document.getElementById('f-desc').value='';
   document.getElementById('f-monto').value='';
 
   const { data, error } = await sb.from('gastos_tortuguero').insert([
-    {descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha}
+    {descripcion:desc, categoria:cat, monto:monto, pagado_por:quien, fecha:fecha, pagado:false}
   ]).select();
 
   if(error){
@@ -513,6 +526,21 @@ async function addGasto(){
   }
   gastos = gastos.map(g => g.id === tempId ? data[0] : g);
   render();
+}
+
+async function togglePagado(id){
+  const g = gastos.find(x => x.id === id);
+  if(!g) return;
+  const prevValue = g.pagado;
+  g.pagado = !g.pagado;
+  render();
+  if(!sb) return;
+  const { error } = await sb.from('gastos_tortuguero').update({pagado: g.pagado}).eq('id', id);
+  if(error){
+    g.pagado = prevValue;
+    render();
+    showBanner("No se pudo actualizar: " + error.message);
+  }
 }
 
 async function deleteGasto(id){
@@ -529,13 +557,18 @@ async function deleteGasto(id){
 }
 
 function render(){
-  const totalGeneral = gastos.reduce((s,g)=>s+Number(g.monto),0);
+  const pendientes = gastos.filter(g => !g.pagado);
+  const liquidados = gastos.filter(g => g.pagado);
+  const totalGeneral = pendientes.reduce((s,g)=>s+Number(g.monto),0);
+  const totalLiquidado = liquidados.reduce((s,g)=>s+Number(g.monto),0);
   const share = totalGeneral / 4;
   const view = document.getElementById('viewSelector').value; // 'grupo' o nombre de persona
   const isPersonal = view !== 'grupo';
 
   document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
-  document.getElementById('totalGastosTag').textContent = gastos.length + (gastos.length===1?" gasto":" gastos");
+  document.getElementById('totalGastosTag').textContent =
+    gastos.length + (gastos.length===1?" gasto":" gastos") +
+    (liquidados.length ? ` · ${liquidados.length} ya pagado(s), no sumado(s)` : '');
 
   // --- toggle: total del grupo vs. tarjeta personal ---
   document.getElementById('totalStripWrap').style.display = isPersonal ? 'none' : 'block';
@@ -543,12 +576,12 @@ function render(){
   document.getElementById('balanceGrid').style.display = isPersonal ? 'none' : 'grid';
   document.getElementById('balanceTag').textContent = isPersonal
     ? 'Vista individual — no se muestra el total del grupo'
-    : 'Lo pagado vs. lo que le toca (25%)';
+    : 'Lo pagado vs. lo que le toca (25%) · solo gastos pendientes';
 
-  // por categoria (solo en vista grupo)
+  // por categoria (solo gastos pendientes, vista grupo)
   const catGrid = document.getElementById('catGrid');
   catGrid.innerHTML = CATEGORIAS.map(c=>{
-    const subtotal = gastos.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
+    const subtotal = pendientes.filter(g=>g.categoria===c.name).reduce((s,g)=>s+Number(g.monto),0);
     return `<div class="cat-card">
       <span class="icon">${c.icon}</span>
       <div class="name">${c.name}</div>
@@ -556,7 +589,7 @@ function render(){
     </div>`;
   }).join('');
 
-  // lista de gastos
+  // lista de gastos (se muestran todos, pendientes y ya pagados)
   const list = document.getElementById('gastoList');
   const empty = document.getElementById('emptyState');
   const visibleGastos = isPersonal ? gastos.filter(g=>g.pagado_por===view) : gastos;
@@ -569,20 +602,20 @@ function render(){
   } else {
     empty.style.display = 'none';
     list.innerHTML = visibleGastos.map(g => `
-      <div class="gasto-row">
+      <div class="gasto-row ${g.pagado ? 'is-pagado' : ''}">
         <span class="cat-pill">${g.categoria}</span>
-        <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}</small></div>
+        <div class="g-desc">${g.descripcion}<small>${g.fecha || ''}${g.pagado ? ' · ✓ Pagado' : ''}</small></div>
         <div class="g-person">${g.pagado_por}</div>
         <div class="g-monto">₡${fmt(g.monto)}</div>
-        <div class="g-spacer"></div>
+        <button class="btn-toggle-pagado ${g.pagado ? 'is-on' : ''}" onclick="togglePagado('${g.id}')">${g.pagado ? '✓ Pagado' : 'Marcar pagado'}</button>
         <button class="btn-del" onclick="deleteGasto('${g.id}')">Eliminar</button>
       </div>
     `).join('');
   }
 
-  // balances de las 4 personas (siempre se calculan, se muestran distinto según la vista)
+  // balances de las 4 personas — solo con gastos pendientes
   const balances = PERSONAS.map(p=>{
-    const paid = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
+    const paid = pendientes.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
     return {persona:p, paid, balance: paid - share};
   });
 
