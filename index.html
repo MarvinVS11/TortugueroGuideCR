@@ -117,26 +117,10 @@
   }
   .form-grid{
     display:grid;
-    grid-template-columns:1.6fr 1fr 0.8fr 1fr 0.9fr auto;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
     gap:12px;
     align-items:end;
   }
-  @media (max-width:860px){ .form-grid{grid-template-columns:1fr 1fr;} }
-
-  .pay-panel{
-    border-color:var(--glow-dim);
-    background:linear-gradient(120deg, rgba(94,234,212,0.08), var(--palm-deep));
-  }
-  .pay-hint{
-    font-size:13px;color:rgba(220,237,232,0.65);margin:0 0 16px;line-height:1.5;
-  }
-  .pay-form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr auto;
-    gap:12px;
-    align-items:end;
-  }
-  @media (max-width:640px){ .pay-form-grid{grid-template-columns:1fr 1fr;} }
   label{
     display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
     letter-spacing:0.06em;text-transform:uppercase;color:rgba(220,237,232,0.55);
@@ -287,6 +271,12 @@
   .view-toggle label{margin:0;}
   .view-toggle select{width:auto;min-width:220px;}
 
+  .type-toggle{
+    display:flex;align-items:center;gap:10px;margin-bottom:20px;
+  }
+  .type-toggle label{margin:0;}
+  .type-toggle select{width:auto;min-width:280px;}
+
   .personal-card{
     border:1px solid var(--line);border-radius:14px;padding:28px;
     background:linear-gradient(120deg, var(--palm-deep), rgba(94,234,212,0.06));
@@ -324,10 +314,18 @@
 
     <div class="section-head">
       <h2>Registrar gasto</h2>
-      <span class="tag">Todo lo pagas tú · se divide 25% entre las 4</span>
+      <span class="tag">Se divide 25% entre las 4</span>
     </div>
     <div class="panel">
-      <div class="form-grid">
+      <div class="type-toggle">
+        <label for="f-tipo">Tipo de registro</label>
+        <select id="f-tipo">
+          <option value="gasto">Gasto del viaje (se divide 25% entre las 4)</option>
+          <option value="reembolso">Reembolso entre personas (alguien le paga a otra)</option>
+        </select>
+      </div>
+
+      <div class="form-grid" id="camposGasto">
         <div>
           <label for="f-desc">Descripción</label>
           <input id="f-desc" type="text" placeholder="Ej. Lancha ida Cariari–Tortuguero">
@@ -348,25 +346,34 @@
           <input id="f-monto" type="number" min="0" step="1" placeholder="0">
         </div>
         <div>
+          <label for="f-quien">Quién pagó</label>
+          <select id="f-quien">
+            <option>Marvin</option>
+            <option>Kathy</option>
+            <option>Adriana</option>
+            <option>Fernanda</option>
+          </select>
+        </div>
+        <div>
           <label for="f-fecha">Fecha</label>
           <input id="f-fecha" type="date">
         </div>
-        <button id="btnAdd">Agregar gasto</button>
       </div>
-    </div>
-  </section>
 
-  <section>
-    <div class="section-head">
-      <h2>💸 Pago recibido</h2>
-      <span class="tag">Cuando alguna te reembolsa — esto NO es un gasto</span>
-    </div>
-    <div class="panel pay-panel">
-      <p class="pay-hint">Usa esto cuando Kathy, Adriana o Fernanda te paguen su parte. Se resta directo de lo que te deben — no lo agregues arriba como gasto.</p>
-      <div class="pay-form-grid">
+      <div class="form-grid" id="camposReembolso" style="display:none;">
         <div>
-          <label for="p-persona">Quién te pagó</label>
-          <select id="p-persona">
+          <label for="p-de">Quién paga</label>
+          <select id="p-de">
+            <option>Kathy</option>
+            <option>Adriana</option>
+            <option>Fernanda</option>
+            <option>Marvin</option>
+          </select>
+        </div>
+        <div>
+          <label for="p-a">A quién</label>
+          <select id="p-a">
+            <option>Marvin</option>
             <option>Kathy</option>
             <option>Adriana</option>
             <option>Fernanda</option>
@@ -376,9 +383,16 @@
           <label for="p-monto">Monto ₡</label>
           <input id="p-monto" type="number" min="0" step="1" placeholder="0">
         </div>
-        <button id="btnRegistrarPago">Registrar pago recibido</button>
+        <div>
+          <label for="p-fecha">Fecha</label>
+          <input id="p-fecha" type="date">
+        </div>
       </div>
+
+      <button id="btnAdd" style="margin-top:16px;">Agregar</button>
     </div>
+  </section>
+
   </section>
 
   <section>
@@ -518,7 +532,7 @@ async function addGasto(){
   const desc = document.getElementById('f-desc').value.trim();
   const cat = document.getElementById('f-cat').value;
   const monto = parseFloat(document.getElementById('f-monto').value);
-  const quien = "Marvin";
+  const quien = document.getElementById('f-quien').value;
   const fecha = document.getElementById('f-fecha').value || new Date().toISOString().slice(0,10);
 
   if(!desc || !monto || monto <= 0){
@@ -565,34 +579,39 @@ async function deleteGasto(id){
 }
 
 async function registrarPago(){
-  const persona = document.getElementById('p-persona').value;
+  const de = document.getElementById('p-de').value;
+  const a = document.getElementById('p-a').value;
   const input = document.getElementById('p-monto');
   const monto = parseFloat(input.value);
 
+  if(de === a){
+    showBanner("Quién paga y a quién no pueden ser la misma persona.");
+    return;
+  }
   if(!monto || monto <= 0){
-    showBanner("Ingresa un monto válido para el pago recibido.");
+    showBanner("Ingresa un monto válido para el reembolso.");
     return;
   }
   if(!sb){
-    showBanner("⚠ Configura Supabase antes de registrar pagos.");
+    showBanner("⚠ Configura Supabase antes de registrar reembolsos.");
     return;
   }
 
-  const fecha = new Date().toISOString().slice(0,10);
+  const fecha = document.getElementById('p-fecha').value || new Date().toISOString().slice(0,10);
   const tempId = 'temp-' + Date.now();
-  const optimistic = {id: tempId, persona, monto, fecha, nota:null, created_at:new Date().toISOString()};
+  const optimistic = {id: tempId, de_persona:de, a_persona:a, monto, fecha, nota:null, created_at:new Date().toISOString()};
   abonos.unshift(optimistic);
   input.value = '';
   render();
 
   const { data, error } = await sb.from('abonos_tortuguero').insert([
-    {persona, monto, fecha}
+    {de_persona:de, a_persona:a, monto, fecha}
   ]).select();
 
   if(error){
     abonos = abonos.filter(a => a.id !== tempId);
     render();
-    showBanner("No se pudo registrar el pago: " + error.message);
+    showBanner("No se pudo registrar el reembolso: " + error.message);
     return;
   }
   abonos = abonos.map(a => a.id === tempId ? data[0] : a);
@@ -604,7 +623,6 @@ function render(){
   const share = totalGeneral / 4;
   const view = document.getElementById('viewSelector').value; // 'grupo' o nombre de persona
   const isPersonal = view !== 'grupo';
-  const DEUDORAS = ["Kathy","Adriana","Fernanda"];
 
   document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
   document.getElementById('totalGastosTag').textContent = gastos.length + (gastos.length===1?" gasto":" gastos");
@@ -615,7 +633,7 @@ function render(){
   document.getElementById('balanceGrid').style.display = isPersonal ? 'none' : 'grid';
   document.getElementById('balanceTag').textContent = isPersonal
     ? 'Vista individual — no se muestra el total del grupo'
-    : 'Su parte (25%) menos lo que ya te han abonado';
+    : 'Lo que pagó cada quien vs. su parte (25%), ya con reembolsos aplicados';
 
   // por categoria (vista grupo)
   const catGrid = document.getElementById('catGrid');
@@ -651,35 +669,25 @@ function render(){
     `).join('');
   }
 
-  // balance: lo que cada una debe a Marvin = su parte (25%) - gastos que ella misma cubrió - pagos que ya hizo
+  // balance general: lo que pagó en gastos - su parte + lo que recibió en reembolsos - lo que envió en reembolsos
   const balances = PERSONAS.map(p=>{
     const gastosPagados = gastos.filter(g=>g.pagado_por===p).reduce((s,g)=>s+Number(g.monto),0);
-    const abonosDados = abonos.filter(a=>a.persona===p).reduce((s,a)=>s+Number(a.monto),0);
-    const cubierto = gastosPagados + abonosDados;
-    const pendiente = share - cubierto; // >0 = debe, <0 = pagó de más
-    return {persona:p, gastosPagados, abonosDados, cubierto, pendiente};
+    const recibido = abonos.filter(a=>a.a_persona===p).reduce((s,a)=>s+Number(a.monto),0);
+    const enviado = abonos.filter(a=>a.de_persona===p).reduce((s,a)=>s+Number(a.monto),0);
+    const balance = gastosPagados - share + recibido - enviado; // >0 = le deben, <0 = debe
+    return {persona:p, gastosPagados, recibido, enviado, balance};
   });
 
   const balanceGrid = document.getElementById('balanceGrid');
   balanceGrid.innerHTML = balances.map(b=>{
-    if(b.persona === "Marvin"){
-      const totalAbonado = abonos.reduce((s,a)=>s+Number(a.monto),0);
-      const pendienteCobrar = balances.filter(x=>DEUDORAS.includes(x.persona)).reduce((s,x)=>s+Math.max(0,x.pendiente),0);
-      return `<div class="person-card">
-        <div class="who">Marvin</div>
-        <div class="paid">Ha pagado <b>₡${fmt(b.gastosPagados)}</b></div>
-        <div class="paid">Ha recibido <b>₡${fmt(totalAbonado)}</b></div>
-        <span class="balance-tag ${pendienteCobrar>1?'negative':'zero'}">${pendienteCobrar>1 ? `Pendiente por cobrar ₡${fmt(pendienteCobrar)}` : 'Todo cobrado'}</span>
-      </div>`;
-    }
-    const cls = Math.abs(b.pendiente) < 1 ? 'zero' : (b.pendiente > 0 ? 'negative' : 'positive');
-    const tagText = Math.abs(b.pendiente) < 1
+    const cls = Math.abs(b.balance) < 1 ? 'zero' : (b.balance > 0 ? 'positive' : 'negative');
+    const tagText = Math.abs(b.balance) < 1
       ? 'Al día'
-      : (b.pendiente > 0 ? `Debe ₡${fmt(b.pendiente)}` : `Pagó de más ₡${fmt(Math.abs(b.pendiente))}`);
+      : (b.balance > 0 ? `Le deben ₡${fmt(b.balance)}` : `Debe ₡${fmt(Math.abs(b.balance))}`);
     return `<div class="person-card">
       <div class="who">${b.persona}</div>
+      <div class="paid">Pagó <b>₡${fmt(b.gastosPagados)}</b></div>
       <div class="paid">Le toca <b>₡${fmt(share)}</b></div>
-      <div class="paid">Ha cubierto <b>₡${fmt(b.cubierto)}</b></div>
       <span class="balance-tag ${cls}">${tagText}</span>
     </div>`;
   }).join('');
@@ -687,56 +695,78 @@ function render(){
   // tarjeta personal (sin revelar el total del grupo)
   if(isPersonal){
     const mine = balances.find(b=>b.persona===view);
-    if(view === "Marvin"){
-      const totalAbonado = abonos.reduce((s,a)=>s+Number(a.monto),0);
-      const pendienteCobrar = balances.filter(x=>DEUDORAS.includes(x.persona)).reduce((s,x)=>s+Math.max(0,x.pendiente),0);
-      document.getElementById('personalCardWrap').innerHTML = `
-        <div class="personal-card">
-          <div class="who">Marvin</div>
-          <div class="row"><span>Has pagado</span><b>₡${fmt(mine.gastosPagados)}</b></div>
-          <div class="row"><span>Has recibido</span><b>₡${fmt(totalAbonado)}</b></div>
-          <span class="balance-tag ${pendienteCobrar>1?'negative':'zero'}" style="margin-top:14px;">${pendienteCobrar>1 ? `Pendiente por cobrar ₡${fmt(pendienteCobrar)}` : 'Todo cobrado'}</span>
-        </div>
-        <div class="personal-note">Esta vista no muestra el total del viaje.</div>
-      `;
-    } else {
-      const cls = Math.abs(mine.pendiente) < 1 ? 'zero' : (mine.pendiente > 0 ? 'negative' : 'positive');
-      const tagText = Math.abs(mine.pendiente) < 1
-        ? 'Estás al día'
-        : (mine.pendiente > 0 ? `Debes ₡${fmt(mine.pendiente)} a Marvin` : `Pagaste de más ₡${fmt(Math.abs(mine.pendiente))}`);
-      document.getElementById('personalCardWrap').innerHTML = `
-        <div class="personal-card">
-          <div class="who">${view}</div>
-          <div class="row"><span>Tu parte (25%)</span><b>₡${fmt(share)}</b></div>
-          <div class="row"><span>Ya cubriste</span><b>₡${fmt(mine.cubierto)}</b></div>
-          <span class="balance-tag ${cls}" style="margin-top:14px;">${tagText}</span>
-        </div>
-        <div class="personal-note">Esta vista no muestra el total del viaje ni lo que deben las demás.</div>
-      `;
-    }
+    const cls = Math.abs(mine.balance) < 1 ? 'zero' : (mine.balance > 0 ? 'positive' : 'negative');
+    const tagText = Math.abs(mine.balance) < 1
+      ? 'Estás al día'
+      : (mine.balance > 0 ? `Te deben ₡${fmt(mine.balance)}` : `Debes ₡${fmt(Math.abs(mine.balance))}`);
+    document.getElementById('personalCardWrap').innerHTML = `
+      <div class="personal-card">
+        <div class="who">${view}</div>
+        <div class="row"><span>Lo que pagaste</span><b>₡${fmt(mine.gastosPagados)}</b></div>
+        <div class="row"><span>Tu parte (25%)</span><b>₡${fmt(share)}</b></div>
+        <span class="balance-tag ${cls}" style="margin-top:14px;">${tagText}</span>
+      </div>
+      <div class="personal-note">Esta vista no muestra el total del viaje ni lo que deben las demás.</div>
+    `;
   }
 
-  // pendientes por cobrar — siempre hacia Marvin
+  // settle up — quién le debe pagar a quién, con el mínimo de movimientos
+  const allSettle = settleUp(balances);
   const settleList = document.getElementById('settleList');
-  const pendientesRows = balances
-    .filter(b => DEUDORAS.includes(b.persona) && b.pendiente > 1)
-    .map(b => `<div class="settle-row"><b>${b.persona}</b> <span class="arrow">→</span> <b>Marvin</b><span class="amt">₡${fmt(b.pendiente)}</span></div>`);
-
   if(isPersonal){
-    settleList.innerHTML = view === "Marvin"
-      ? pendientesRows.join('') || '<div class="settle-row">Ya te pagaron todo. 🎉</div>'
-      : (balances.find(b=>b.persona===view).pendiente > 1
-          ? `<div class="settle-row"><b>${view}</b> <span class="arrow">→</span> <b>Marvin</b><span class="amt">₡${fmt(balances.find(b=>b.persona===view).pendiente)}</span></div>`
-          : '<div class="settle-row">Estás al día. 🎉</div>');
+    const mineRows = allSettle.filter(r => r.from === view || r.to === view);
+    settleList.innerHTML = mineRows.map(rowHtml).join('') || '<div class="settle-row">No tienes movimientos pendientes. 🎉</div>';
   } else {
-    settleList.innerHTML = pendientesRows.join('') || '<div class="settle-row">Todas están al día. 🎉</div>';
+    settleList.innerHTML = allSettle.map(rowHtml).join('') || '<div class="settle-row">Todos están al día. 🎉</div>';
   }
 }
 
-document.getElementById('btnAdd').addEventListener('click', addGasto);
-document.getElementById('btnRegistrarPago').addEventListener('click', registrarPago);
+function rowHtml(r){
+  return `<div class="settle-row"><b>${r.from}</b> <span class="arrow">→</span> <b>${r.to}</b><span class="amt">₡${fmt(r.amount)}</span></div>`;
+}
+
+function settleUp(balances){
+  const debtors = balances.filter(b=>b.balance < -1).map(b=>({...b, remaining: -b.balance})).sort((a,b)=>b.remaining-a.remaining);
+  const creditors = balances.filter(b=>b.balance > 1).map(b=>({...b, remaining: b.balance})).sort((a,b)=>b.remaining-a.remaining);
+
+  if(debtors.length === 0 || creditors.length === 0) return [];
+
+  const rows = [];
+  let di = 0, ci = 0;
+  while(di < debtors.length && ci < creditors.length){
+    const d = debtors[di], c = creditors[ci];
+    const amt = Math.min(d.remaining, c.remaining);
+    rows.push({from:d.persona, to:c.persona, amount:amt});
+    d.remaining -= amt;
+    c.remaining -= amt;
+    if(d.remaining <= 1) di++;
+    if(c.remaining <= 1) ci++;
+  }
+  return rows;
+}
+
+function toggleTipoCampos(){
+  const tipo = document.getElementById('f-tipo').value;
+  document.getElementById('camposGasto').style.display = tipo === 'gasto' ? 'grid' : 'none';
+  document.getElementById('camposReembolso').style.display = tipo === 'reembolso' ? 'grid' : 'none';
+  document.getElementById('btnAdd').textContent = tipo === 'gasto' ? 'Agregar gasto' : 'Agregar reembolso';
+}
+
+function onAddClick(){
+  const tipo = document.getElementById('f-tipo').value;
+  if(tipo === 'gasto'){
+    addGasto();
+  } else {
+    registrarPago();
+  }
+}
+
+document.getElementById('btnAdd').addEventListener('click', onAddClick);
+document.getElementById('f-tipo').addEventListener('change', toggleTipoCampos);
 document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+document.getElementById('p-fecha').value = new Date().toISOString().slice(0,10);
 document.getElementById('viewSelector').addEventListener('change', render);
+toggleTipoCampos();
 
 drawRiverNodes();
 loadData();
